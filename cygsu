@@ -5,12 +5,75 @@ getsid() {
   "$(cygpath -u $SYSTEMROOT)/System32/whoami" /user | tail -n 1 | awk '{print $NF}'
 }
 
+gettmpl() {
+  cat << EOF
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.6" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Author>CygwinSkipUAC</Author>
+    <URI>$tn</URI>
+  </RegistrationInfo>
+  <Triggers>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>$sid</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>false</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <DisallowStartOnRemoteAppSession>false</DisallowStartOnRemoteAppSession>
+    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>$cmd</Command>
+      <Arguments>$args</Arguments>
+      <WorkingDirectory>$dirrun</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>
+EOF
+}
+
 subcmd="$1"
 tn="${2//\//\\}"
 shift; shift;
 
 if [[ "$subcmd" == "check" ]]; then
   schtasks /Query /TN "$tn"
-if [[ "$subcmd" == "make" ]]; then
-  true #TODO
+elif [[ "$subcmd" == "make" ]]; then
+  sid="$(getsid | tr -d '\n\r')"
+  TMPFILE="$(mktemp --suffix=.xml)"
+  trap 'rm -fv "$TMPFILE"' EXIT
+
+  cmd="$(readlink -f "$1")"
+  dirrun="$(cygpath -aw "$(dirname "$cmd")")"
+  cmd="$(cygpath -aw "$cmd")"
+  shift;
+  args=""
+  for arg in "$@"; do
+    args+="$arg "
+  done
+  args="${args% }"
+  gettmpl > "$TMPFILE"
+  elevate -w schtasks /Create /TN "$tn" /xml "$(cygpath -aw "$TMPFILE")"
 fi
