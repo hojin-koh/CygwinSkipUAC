@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+getsid() {
+  "$(cygpath -u $SYSTEMROOT)/System32/whoami" /user | tail -n 1 | awk '{print $NF}'
+}
+
+subcmd="$1"
+tn="${2//\//\\}"
+shift; shift;
+
+if [[ "$subcmd" == "check" ]]; then
+  schtasks /Query /TN "$tn"
+if [[ "$subcmd" == "make" ]]; then
+  true #TODO
+fi
