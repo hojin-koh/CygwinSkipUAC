@@ -60,6 +60,8 @@ shift; shift;
 
 if [[ "$subcmd" == "check" ]]; then
   schtasks /Query /TN "$tn"
+elif [[ "$subcmd" == "del" ]]; then
+  elevate -w schtasks /Delete /TN "$tn" /F
 elif [[ "$subcmd" == "make" ]]; then
   sid="$(getsid | tr -d '\n\r')"
   TMPFILE="$(mktemp --suffix=.xml)"
@@ -71,7 +73,7 @@ elif [[ "$subcmd" == "make" ]]; then
   shift;
   args=""
   for arg in "$@"; do
-    args+="$arg "
+    args+="\"$arg\" "
   done
   args="${args% }"
   gettmpl > "$TMPFILE"
