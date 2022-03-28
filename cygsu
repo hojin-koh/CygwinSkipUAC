@@ -62,6 +62,8 @@ if [[ "$subcmd" == "check" ]]; then
   schtasks /Query /TN "$tn"
 elif [[ "$subcmd" == "del" ]]; then
   elevate -w schtasks /Delete /TN "$tn" /F
+elif [[ "$subcmd" == "run" ]]; then
+  schtasks /Run /TN "$tn"
 elif [[ "$subcmd" == "make" ]]; then
   sid="$(getsid | tr -d '\n\r')"
   TMPFILE="$(mktemp --suffix=.xml)"
