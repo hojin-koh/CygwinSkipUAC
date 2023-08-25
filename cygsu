@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export MSYS2_ARG_CONV_EXCL="*"
+
 getsid() {
   "$(cygpath -u $SYSTEMROOT)/System32/whoami" /user | tail -n 1 | awk '{print $NF}'
 }
